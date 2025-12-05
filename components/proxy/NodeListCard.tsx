@@ -21,7 +21,7 @@ import type { ParsedProxy } from '@/types/proxy';
 import { 
   getDisplayProtocolType, 
   getProtocolIconBackground 
-} from '@/utils/protocolUtils';
+} from '@/lib/protocol-utils';
 
 interface NodeListCardProps {
   proxies: ParsedProxy[];

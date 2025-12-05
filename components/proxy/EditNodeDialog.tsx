@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { ParsedProxy, FormFieldConfig } from '@/types/proxy';
 import { useEditConfig } from '@/hooks/useEditConfig';
-import { getDisplayProtocolType, getProtocolColor } from '@/utils/protocolUtils';
+import { getDisplayProtocolType, getProtocolColor } from '@/lib/protocol-utils';
 import { Shield, Network, Server } from 'lucide-react';
 
 interface EditNodeDialogProps {

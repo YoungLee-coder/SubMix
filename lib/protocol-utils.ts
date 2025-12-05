@@ -2,7 +2,7 @@
 
 import { ProxyParser } from '@/lib/proxy-parser';
 import type { ParsedProxy, ProtocolIconMap } from '@/types/proxy';
-import { Shield, Network, Server } from 'lucide-react';
+import { Shield, Network, Server, type LucideIcon } from 'lucide-react';
 
 // 协议图标和颜色映射
 export const protocolIconMap: ProtocolIconMap = {
@@ -52,7 +52,7 @@ export function getDisplayProtocolType(proxy: ParsedProxy): string {
 }
 
 // 获取协议图标组件
-export function getProtocolIcon(type: string) {
+export function getProtocolIcon(type: string): LucideIcon {
   switch (type) {
     case "vless": 
     case "trojan": 
@@ -91,4 +91,3 @@ export function getProtocolIconBackground(type: string): string {
   
   return colorMap[type] || colorMap.default;
 }
-
