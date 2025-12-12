@@ -34,3 +34,7 @@ updates:
     labels:
       - "ci"
       - "automated"
+    groups:
+      all-actions:
+        patterns:
+          - "*"
