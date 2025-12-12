@@ -7,20 +7,18 @@ updates:
       interval: "daily"
       time: "09:00"
       timezone: "Asia/Shanghai"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
     commit-message:
       prefix: "chore(deps)"
     labels:
       - "dependencies"
       - "automated"
-    # 将小版本和补丁版本更新分组
+    # 将所有更新分组到一个 PR，避免冲突
     groups:
-      minor-and-patch:
+      all-dependencies:
         patterns:
           - "*"
-        update-types:
-          - "minor"
-          - "patch"
 
   # GitHub Actions 更新
   - package-ecosystem: "github-actions"
