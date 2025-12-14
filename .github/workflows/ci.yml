@@ -1,35 +1,40 @@
-name: CI
+name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
+
+permissions:
+  contents: read
 
 jobs:
-  lint-and-build:
+  lint:
+    name: Check for build and type issues
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
+          run_install: false
 
-      - name: Setup Node.js
+      - name: Setup node
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
-      - name: Lint
+      - name: Run lint
         run: pnpm lint
 
-      - name: Build
+      - name: Run build
         run: pnpm build

@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # npm/pnpm 依赖更新
+  # npm 依赖更新
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -8,33 +8,62 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Shanghai"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
+    # 自动 rebase 避免冲突
     rebase-strategy: "auto"
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "automated"
-    # 将所有更新分组到一个 PR，避免冲突
+
+    # 按类型分组更新
     groups:
-      all-dependencies:
+      # React 生态系统
+      react:
         patterns:
-          - "*"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      # Next.js 相关
+      nextjs:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+      # Radix UI 组件
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      # TanStack 系列
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      # Tailwind CSS 相关
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "tailwind-merge"
+          - "tw-animate-css"
+      # 开发依赖
+      dev-dependencies:
+        dependency-type: "development"
+        exclude-patterns:
+          - "@types/react*"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "eslint-config-next"
+    # 忽略主版本更新（需要手动处理）
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions 更新
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Shanghai"
+      interval: "monthly"
     commit-message:
       prefix: "chore(ci)"
-    labels:
-      - "ci"
-      - "automated"
-    groups:
-      all-actions:
-        patterns:
-          - "*"
+
