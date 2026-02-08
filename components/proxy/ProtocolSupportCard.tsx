@@ -4,7 +4,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Shield, Network, Server } from "lucide-react";
+import { Settings, Shield, Network, Server, AlertTriangle } from "lucide-react";
 
 export function ProtocolSupportCard() {
   return (
@@ -12,10 +12,10 @@ export function ProtocolSupportCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5" />
-          支持的协议格式与规则集
+          支持的协议格式
         </CardTitle>
         <CardDescription>
-          各种代理协议的链接格式和使用的规则集说明
+          各协议连接串格式说明
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -78,44 +78,12 @@ export function ProtocolSupportCard() {
           </div>
         </div>
 
-        {/* 规则集说明 */}
+        {/* 免责声明 */}
         <div className="border-t pt-6">
-          <h4 className="font-medium mb-4 flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              🦄 Loyalsoldier/clash-rules
-            </Badge>
-            规则集说明
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <div className="font-medium">白名单模式（推荐）</div>
-              <ul className="text-muted-foreground space-y-1 text-xs">
-                <li>• 没有命中规则的流量统统使用代理</li>
-                <li>• 适用于服务器线路稳定、流量充足的用户</li>
-                <li>• 能确保新网站自动走代理</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <div className="font-medium">黑名单模式</div>
-              <ul className="text-muted-foreground space-y-1 text-xs">
-                <li>• 只有命中规则的流量才使用代理</li>
-                <li>• 适用于流量紧缺或线路不稳定的用户</li>
-                <li>• 常用于软路由、家庭网关用户</li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-            <div className="text-xs text-muted-foreground">
-              本项目使用来自{' '}
-              <a 
-                href="https://github.com/Loyalsoldier/clash-rules" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-primary hover:underline"
-              >
-                @Loyalsoldier/clash-rules
-              </a>{' '}
-              的高质量规则集，每日自动更新，包含广告拦截、分流规则、GeoIP 数据等完整功能。
+          <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 dark:text-amber-200">
+              本工具仅供企业内部网络管理与技术学习用途，使用者应确保在合法合规的前提下使用本工具，并自行承担相关责任。
             </div>
           </div>
         </div>

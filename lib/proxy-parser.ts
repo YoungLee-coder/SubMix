@@ -1,4 +1,4 @@
-// 主要的代理解析器入口类 - 重构后版本
+// 主要的协议解析器入口类 - 重构后版本
 // 导入所有具体的协议解析器
 
 import type { ProxyNode, IProtocolParser } from './parsers/base';
@@ -12,7 +12,7 @@ import { TrojanParser } from './parsers/trojan';
 export type { ProxyNode } from './parsers/base';
 
 /**
- * 代理解析器主入口类
+ * 协议解析器主入口类
  * 统一管理所有协议解析器，提供统一的解析接口
  */
 export class ProxyParser {
@@ -79,7 +79,7 @@ export class ProxyParser {
   }
 
   /**
-   * 自动检测并解析代理链接
+   * 自动检测并解析协议连接串
    * 遍历所有已注册的解析器，找到第一个支持该协议的解析器进行解析
    */
   static parseProxy(url: string): ProxyNode | null {
@@ -97,12 +97,12 @@ export class ProxyParser {
     
     // 如果没有找到支持的协议解析器
     const protocol = trimmedUrl.split('://')[0];
-    console.error('不支持的代理协议:', protocol);
+    console.error('不支持的协议类型:', protocol);
     return null;
   }
 
   /**
-   * 解析多个代理链接
+   * 解析多个协议连接串
    */
   static parseMultipleProxies(urls: string[]): ProxyNode[] {
     const proxies: ProxyNode[] = [];

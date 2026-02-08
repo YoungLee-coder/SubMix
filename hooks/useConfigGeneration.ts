@@ -42,7 +42,7 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
   // 手动生成配置
   const handleGenerateConfig = useCallback(() => {
     if (proxies.length === 0) {
-      toast.error("请先添加至少一个代理节点");
+      toast.error("请先添加至少一个服务节点");
       return;
     }
 
@@ -85,7 +85,7 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
     if (!outputYaml) return;
     
     try {
-      // 将配置上传到订阅API获取订阅ID
+      // 将配置上传到配置托管API获取配置ID
       const response = await fetch('/api/subscription', {
         method: 'POST',
         headers: {
@@ -100,16 +100,16 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
       
       const { id } = await response.json();
       
-      // 生成订阅链接（自动适配当前域名）
+      // 生成配置链接（自动适配当前域名）
       const baseUrl = window.location.origin;
       const subscriptionUrl = `${baseUrl}/api/subscription?id=${id}`;
       
-      // 开发环境下记录订阅链接
+      // 开发环境下记录配置链接
       if (process.env.NODE_ENV === 'development') {
-        console.log('生成的订阅链接:', subscriptionUrl);
+        console.log('生成的配置链接:', subscriptionUrl);
       }
       
-      // 将订阅链接编码到二维码中
+      // 将配置链接编码到二维码中
       const qrDataURL = await QRCode.toDataURL(subscriptionUrl, {
         width: 512,
         margin: 2,
@@ -193,23 +193,23 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
             </head>
             <body>
               <div class="container">
-                <h1>📱 订阅链接二维码</h1>
+                <h1>📱 配置链接二维码</h1>
                 <div class="qr-code">
-                  <img src="${qrDataURL}" alt="订阅链接二维码" style="max-width: 100%; height: auto;">
+                  <img src="${qrDataURL}" alt="配置链接二维码" style="max-width: 100%; height: auto;">
                 </div>
                 <div class="instructions">
                   <strong>使用说明：</strong><br>
-                  1. 使用 FlClash、Clash for Windows、Clash Verge 等客户端扫描上方二维码<br>
-                  2. 客户端会自动识别并提示添加订阅<br>
-                  3. 确认添加后即可直接使用配置文件<br>
-                  4. 订阅链接有效期为30分钟，请及时添加
+                  1. 使用支持 Mihomo 内核的客户端扫描上方二维码<br>
+                  2. 客户端会自动识别并提示导入配置<br>
+                  3. 确认导入后即可使用配置文件<br>
+                  4. 配置链接有效期为30分钟，请及时导入
                 </div>
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 12px; color: #666;">
-                  <strong>订阅链接：</strong><br>
+                  <strong>配置链接：</strong><br>
                   <code style="word-break: break-all; font-size: 11px;">${subscriptionUrl}</code>
                 </div>
                 <a href="${qrDataURL}" download="subscription-qrcode.png" class="button">下载二维码</a>
-                <button class="button secondary" onclick="navigator.clipboard.writeText('${subscriptionUrl}').then(() => alert('订阅链接已复制')).catch(() => alert('复制失败'))">复制链接</button>
+                <button class="button secondary" onclick="navigator.clipboard.writeText('${subscriptionUrl}').then(() => alert('配置链接已复制')).catch(() => alert('复制失败'))">复制链接</button>
                 <button class="button secondary" onclick="window.close()">关闭窗口</button>
               </div>
             </body>
@@ -218,7 +218,7 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
         qrWindow.document.close();
       }
       
-      toast.success("订阅二维码已生成，有效期30分钟");
+      toast.success("配置二维码已生成，有效期30分钟");
     } catch (error) {
       console.error("生成二维码失败:", error);
       toast.error("生成二维码失败");

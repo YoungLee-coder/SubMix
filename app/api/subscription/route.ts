@@ -1,4 +1,4 @@
-// 订阅配置API端点
+// 配置托管API端点
 // 支持Vercel等云平台部署，自动适配域名
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -68,7 +68,7 @@ function generateId(): string {
          Math.random().toString(36).substring(2, 15);
 }
 
-// POST: 存储配置并返回订阅ID
+// POST: 存储配置并返回配置ID
 export async function POST(request: NextRequest) {
   try {
     const { config } = await request.json();

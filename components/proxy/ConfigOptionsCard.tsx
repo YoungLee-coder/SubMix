@@ -54,7 +54,7 @@ export function ConfigOptionsCard({
                 <Label htmlFor="whitelist" className="cursor-pointer">
                   白名单模式
                   <span className="block text-xs text-muted-foreground">
-                    未匹配规则的流量走代理
+                    未匹配规则的流量走转发通道
                   </span>
                 </Label>
               </div>
@@ -63,7 +63,7 @@ export function ConfigOptionsCard({
                 <Label htmlFor="blacklist" className="cursor-pointer">
                   黑名单模式
                   <span className="block text-xs text-muted-foreground">
-                    只有指定流量走代理
+                    仅指定流量走转发通道
                   </span>
                 </Label>
               </div>

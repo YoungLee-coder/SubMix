@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     if (!links || !Array.isArray(links) || links.length === 0) {
       return NextResponse.json<ConvertResponse>({
         success: false,
-        error: '请提供有效的订阅链接数组'
+        error: '请提供有效的连接串数组'
       }, { status: 400 });
     }
 
@@ -34,17 +34,17 @@ export async function POST(request: NextRequest) {
     if (validLinks.length === 0) {
       return NextResponse.json<ConvertResponse>({
         success: false,
-        error: '没有找到有效的订阅链接'
+        error: '没有找到有效的连接串'
       }, { status: 400 });
     }
 
-    // 解析代理链接
+    // 解析协议连接串
     const proxies = ProxyParser.parseMultipleProxies(validLinks);
 
     if (proxies.length === 0) {
       return NextResponse.json<ConvertResponse>({
         success: false,
-        error: '没有成功解析到任何有效的代理节点，请检查链接格式是否正确'
+        error: '没有成功解析到任何有效的服务节点，请检查连接串格式是否正确'
       }, { status: 400 });
     }
 

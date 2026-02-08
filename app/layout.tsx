@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "SubMix - 订阅链接转换器",
-  description: "SubMix - 将 VLESS、Hysteria2、Shadowsocks、Trojan 等订阅链接转换为 Mihomo 内核 YAML 配置文件",
+  title: "SubMix - 协议配置管理工具",
+  description: "SubMix - 企业内网多协议连接串解析与 YAML 配置生成工具",
 };
 
 export default function RootLayout({
@@ -27,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
         <Script
           src="https://cloud.umami.is/script.js"

@@ -1,4 +1,4 @@
-// 订阅缓存统计API - 仅开发环境可用
+// 配置缓存统计API - 仅开发环境可用
 
 import { NextResponse } from 'next/server';
 
@@ -20,7 +20,7 @@ export async function GET() {
       message: '缓存统计',
       note: '详细统计信息请查看服务器控制台日志',
       endpoints: {
-        'POST /api/subscription': '存储配置并获取订阅ID',
+        'POST /api/subscription': '存储配置并获取配置ID',
         'GET /api/subscription?id=xxx': '获取指定配置',
         'GET /api/subscription/stats': '获取缓存统计（仅开发环境）'
       },

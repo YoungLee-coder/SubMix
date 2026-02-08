@@ -89,7 +89,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            强大的代理订阅链接转换器，支持逐个添加节点、自由编辑排序，生成专属的 Mihomo 配置
+            企业多协议配置管理工具，支持逐个添加节点、自由编辑排序，生成统一的 YAML 配置
           </p>
         </div>
 

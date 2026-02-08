@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
       console.log(`📡 节点转换请求 (POST): 链接数=${proxyLinks.length}, Type=${configType}, Mode=${ruleMode}`);
     }
 
-    // 解析代理节点
+    // 解析服务节点
     const proxies = ProxyParser.parseMultipleProxies(proxyLinks);
 
     if (proxies.length === 0) {
       return NextResponse.json(
-        { error: '没有找到有效的代理节点，请检查节点链接格式' },
+        { error: '没有找到有效的服务节点，请检查连接串格式' },
         { status: 400 }
       );
     }
@@ -154,12 +154,12 @@ export async function GET(request: NextRequest) {
       console.log(`📡 节点转换请求: 链接数=${proxyLinks.length}, Type=${configType}, Mode=${ruleMode}`);
     }
 
-    // 解析代理节点
+    // 解析服务节点
     const proxies = ProxyParser.parseMultipleProxies(proxyLinks);
     
     if (proxies.length === 0) {
       return NextResponse.json(
-        { error: '没有找到有效的代理节点，请检查节点链接格式' },
+        { error: '没有找到有效的服务节点，请检查连接串格式' },
         { status: 400 }
       );
     }

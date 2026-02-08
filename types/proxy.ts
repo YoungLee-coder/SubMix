@@ -1,4 +1,4 @@
-// 前端代理相关类型定义
+// 前端节点相关类型定义
 
 import type { ProxyNode } from '@/lib/proxy-parser';
 

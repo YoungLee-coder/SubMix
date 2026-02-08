@@ -58,8 +58,8 @@ export function AddNodeCard({
             </CardTitle>
             <CardDescription>
               {inputMode === "single" 
-                ? "输入单个订阅链接，解析后添加到节点列表" 
-                : "批量输入多个订阅链接，一次性解析并添加"
+                ? "输入单个连接串，解析后添加到节点列表" 
+                : "批量输入多个连接串，一次性解析并添加"
               }
             </CardDescription>
           </div>
@@ -70,7 +70,7 @@ export function AddNodeCard({
               <SelectItem value="single">
                 <div className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  单个链接
+                  单个连接串
                 </div>
               </SelectItem>
               <SelectItem value="batch">
@@ -87,12 +87,12 @@ export function AddNodeCard({
         {inputMode === "single" ? (
           <>
             <div className="space-y-2">
-              <Label htmlFor="single-link">订阅链接</Label>
+              <Label htmlFor="single-link">连接串</Label>
               <Input
                 id="single-link"
                 value={singleLink}
                 onChange={(e) => setSingleLink(e.target.value)}
-                placeholder="粘贴单个订阅链接..."
+                placeholder="粘贴单个协议连接串..."
                 onKeyDown={(e) => handleKeyDown(e, handleSingleSubmit)}
               />
             </div>
@@ -109,17 +109,17 @@ export function AddNodeCard({
         ) : (
           <>
             <div className="space-y-2">
-              <Label htmlFor="batch-links">批量订阅链接</Label>
+              <Label htmlFor="batch-links">批量连接串</Label>
               <Textarea
                 id="batch-links"
                 value={batchLinks}
                 onChange={(e) => setBatchLinks(e.target.value)}
-                placeholder="粘贴多个订阅链接，每行一个..."
+                placeholder="粘贴多个连接串，每行一个..."
                 className="min-h-32 resize-none"
                 rows={6}
               />
               <div className="text-xs text-muted-foreground">
-                每行输入一个订阅链接，支持各种协议格式
+                每行输入一个连接串，支持各种协议格式
               </div>
             </div>
             

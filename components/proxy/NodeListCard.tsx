@@ -75,7 +75,7 @@ export function NodeListCard({
           </Badge>
         </CardTitle>
         <CardDescription>
-          管理您的代理节点，支持编辑和排序
+          管理服务节点，支持编辑和排序
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 pb-2">
@@ -84,7 +84,7 @@ export function NodeListCard({
             <div>
               <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>暂无节点</p>
-              <p className="text-sm">请在左侧添加订阅链接</p>
+              <p className="text-sm">请在左侧添加连接串</p>
             </div>
           </div>
         ) : (

@@ -17,7 +17,7 @@ export interface IProtocolParser {
   /**
    * 解析协议链接
    * @param url 协议链接
-   * @returns 解析后的代理节点，失败返回 null
+   * @returns 解析后的节点配置，失败返回 null
    */
   parse(url: string): ProxyNode | null;
   

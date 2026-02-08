@@ -1,4 +1,4 @@
-// 代理管理相关的 hooks
+// 节点管理相关的 hooks
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -15,10 +15,10 @@ export function useProxyManagement() {
     return Math.random().toString(36).substr(2, 9);
   }, []);
 
-  // 添加单个代理
+  // 添加单个节点
   const addSingleProxy = useCallback((link: string) => {
     if (!link.trim()) {
-      toast.error("请输入订阅链接");
+      toast.error("请输入连接串");
       return false;
     }
 
@@ -44,16 +44,16 @@ export function useProxyManagement() {
     }
   }, [generateId]);
 
-  // 批量添加代理
+  // 批量添加节点
   const addBatchProxies = useCallback((links: string) => {
     if (!links.trim()) {
-      toast.error("请输入订阅链接");
+      toast.error("请输入连接串");
       return false;
     }
 
     const linkArray = links.split('\n').filter(link => link.trim());
     if (linkArray.length === 0) {
-      toast.error("请输入有效的订阅链接");
+      toast.error("请输入有效的连接串");
       return false;
     }
 
@@ -90,13 +90,13 @@ export function useProxyManagement() {
     }
   }, [generateId]);
 
-  // 删除代理
+  // 删除节点
   const deleteProxy = useCallback((id: string) => {
     setParsedProxies(prev => prev.filter(p => p.id !== id));
     toast.success("节点已删除");
   }, []);
 
-  // 移动代理位置
+  // 移动节点位置
   const moveProxy = useCallback((id: string, direction: "up" | "down") => {
     setParsedProxies(prev => {
       const index = prev.findIndex(p => p.id === id);
@@ -113,7 +113,7 @@ export function useProxyManagement() {
     });
   }, []);
 
-  // 更新代理信息
+  // 更新节点信息
   const updateProxy = useCallback((updatedProxy: ParsedProxy) => {
     setParsedProxies(prev => 
       prev.map(p => p.id === updatedProxy.id ? updatedProxy : p)
@@ -121,7 +121,7 @@ export function useProxyManagement() {
     toast.success("节点信息已更新");
   }, []);
 
-  // 清空所有代理
+  // 清空所有节点
   const clearAllProxies = useCallback(() => {
     setParsedProxies([]);
     toast.info("已清空所有节点");

@@ -30,13 +30,13 @@ export function EditNodeDialog({
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [originalFields, setOriginalFields] = useState<Set<string>>(new Set());
 
-  // 当代理或配置改变时，初始化表单数据
+  // 当节点或配置改变时，初始化表单数据
   useEffect(() => {
     if (proxy && configs.length > 0) {
       const initialData: Record<string, unknown> = {};
       const existingFields = new Set<string>();
       
-      // 从代理对象中提取现有值
+      // 从节点对象中提取现有值
       const copyProxyValue = (obj: Record<string, unknown>, path: string): unknown => {
         const keys = path.split('.');
         let current: unknown = obj;

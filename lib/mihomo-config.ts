@@ -290,7 +290,7 @@ export class MihomoConfigGenerator {
   }
 
   /**
-   * 生成代理组配置 - 优化版本
+   * 生成节点组配置 - 优化版本
    */
   static generateProxyGroups(proxyNames: string[]) {
     return [
@@ -362,10 +362,10 @@ export class MihomoConfigGenerator {
       'RULE-SET,icloud,全球直连',
       'RULE-SET,apple,全球直连',
       
-      // Google 服务 (根据需要可改为代理)
+      // Google 服务 (可根据需要调整路由策略)
       'RULE-SET,google,手动切换',
       
-      // 代理域名列表
+      // 需转发的域名列表
       'RULE-SET,proxy,手动切换',
       
       // 直连域名列表
@@ -380,7 +380,7 @@ export class MihomoConfigGenerator {
       'GEOIP,LAN,全球直连',
       'GEOIP,CN,全球直连',
       
-      // 最终规则 (白名单模式：未匹配的走代理)
+      // 最终规则 (白名单模式：未匹配的走转发通道)
       'MATCH,手动切换'
     ];
   }
@@ -403,7 +403,7 @@ export class MihomoConfigGenerator {
       // 广告拦截
       'RULE-SET,reject,广告拦截',
       
-      // 需要代理的域名
+      // 需要转发的域名
       'RULE-SET,tld-not-cn,手动切换',
       'RULE-SET,gfw,手动切换',
       'RULE-SET,telegramcidr,手动切换',
@@ -456,7 +456,7 @@ export class MihomoConfigGenerator {
         interval: 86400
       },
       
-      // 代理域名列表
+      // 需转发的域名列表
       'proxy': {
         type: 'http' as const,
         behavior: 'domain' as const,
@@ -540,7 +540,7 @@ export class MihomoConfigGenerator {
   }
 
   /**
-   * 从代理节点生成完整的 Mihomo 配置
+   * 从服务节点生成完整的 Mihomo 配置
    */
   static generateConfig(proxies: ProxyNode[], ruleMode: 'whitelist' | 'blacklist' = 'whitelist'): MihomoConfig {
     const baseConfig = this.generateBaseConfig();
@@ -586,7 +586,7 @@ export class MihomoConfigGenerator {
     const baseConfig = this.generateBaseConfig();
     const proxyNames = proxies.map(proxy => proxy.name);
     
-    // 简化的代理组
+    // 简化的节点组
     const proxyGroups = [
       {
         name: '手动切换',
@@ -682,7 +682,7 @@ export class MihomoConfigGenerator {
 
     // 根据模式选择规则
     const rules = ruleMode === 'whitelist' ? [
-      // 白名单模式 - 未匹配的走代理
+      // 白名单模式 - 未匹配的走转发通道
       'RULE-SET,private,全球直连',
       'RULE-SET,reject,广告拦截',
       'RULE-SET,direct,全球直连',
