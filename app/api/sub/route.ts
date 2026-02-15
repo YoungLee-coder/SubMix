@@ -2,8 +2,41 @@
 // 通过 URL 参数传入单个或多个节点链接，直接返回 Mihomo 配置文件
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ProxyParser } from '@/lib/proxy-parser';
-import { MihomoConfigGenerator } from '@/lib/mihomo-config';
+import { z } from 'zod';
+import { fail } from '@/lib/http/response';
+import { badRequest, forbidden, internalServerError, payloadTooLarge, tooManyRequests } from '@/lib/http/errors';
+import { buildCorsHeaders, evaluateCors } from '@/lib/security/cors';
+import { parseJsonBody, parseMaxBytes } from '@/lib/security/request-validation';
+import { checkRateLimit } from '@/lib/security/rate-limit';
+import { parseProxyLinks } from '@/features/proxy/application/parse-links';
+import { generateProxyConfig } from '@/features/proxy/application/generate-config';
+
+const postSubSchema = z.object({
+  urls: z.array(z.string().min(1)).min(1),
+  type: z.enum(['simple', 'full']).optional(),
+  mode: z.enum(['whitelist', 'blacklist']).optional(),
+});
+
+const SUB_REQUEST_MAX_BYTES = parseMaxBytes('MAX_SUB_REQUEST_BYTES', 256 * 1024);
+
+function createRateHeaders(remaining: number, retryAfterSeconds: number): Record<string, string> {
+  return {
+    'X-RateLimit-Remaining': String(remaining),
+    'Retry-After': String(retryAfterSeconds)
+  };
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const cors = evaluateCors(request);
+  if (!cors.allowed) {
+    return fail(forbidden('跨域请求来源不在白名单中'));
+  }
+
+  return new NextResponse(null, {
+    status: 204,
+    headers: buildCorsHeaders(cors, 'GET, POST, OPTIONS')
+  });
+}
 
 /**
  * POST: 节点转换接口（推荐，无需手动 URL 编码）
@@ -16,26 +49,43 @@ import { MihomoConfigGenerator } from '@/lib/mihomo-config';
  * }
  */
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { urls, type = 'full', mode = 'whitelist' } = body;
+  const cors = evaluateCors(request);
+  const corsHeaders = buildCorsHeaders(cors, 'GET, POST, OPTIONS');
+  if (!cors.allowed) {
+    return fail(forbidden('跨域请求来源不在白名单中'), { headers: corsHeaders });
+  }
 
-    // 验证参数
-    if (!urls || !Array.isArray(urls) || urls.length === 0) {
-      return NextResponse.json(
-        { error: '缺少节点链接数组 (urls)' },
-        { status: 400 }
-      );
+  const rate = checkRateLimit(request, 'sub:post', {
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+  if (!rate.success) {
+    return fail(tooManyRequests('请求过于频繁，请稍后再试'), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
+  }
+
+  try {
+    const parsedBody = await parseJsonBody(request, postSubSchema, SUB_REQUEST_MAX_BYTES);
+    if (!parsedBody.success) {
+      const error = parsedBody.status === 413
+        ? payloadTooLarge(parsedBody.error, parsedBody.issues)
+        : badRequest(parsedBody.error, parsedBody.issues);
+
+      return fail(error, {
+        headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+      });
     }
 
-    // 过滤空链接
-    const proxyLinks = urls.filter((link: string) => link && link.trim().length > 0);
+    const { urls, type = 'full', mode = 'whitelist' } = parsedBody.data;
+
+    const parsedLinks = parseProxyLinks(urls);
+    const proxyLinks = parsedLinks.links;
 
     if (proxyLinks.length === 0) {
-      return NextResponse.json(
-        { error: '没有找到有效的节点链接' },
-        { status: 400 }
-      );
+      return fail(badRequest('没有找到有效的节点链接'), {
+        headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+      });
     }
 
     // 验证配置类型
@@ -47,23 +97,19 @@ export async function POST(request: NextRequest) {
       console.log(`📡 节点转换请求 (POST): 链接数=${proxyLinks.length}, Type=${configType}, Mode=${ruleMode}`);
     }
 
-    // 解析服务节点
-    const proxies = ProxyParser.parseMultipleProxies(proxyLinks);
+    const proxies = parsedLinks.proxies;
 
     if (proxies.length === 0) {
-      return NextResponse.json(
-        { error: '没有找到有效的服务节点，请检查连接串格式' },
-        { status: 400 }
-      );
+      return fail(badRequest('没有找到有效的服务节点，请检查连接串格式'), {
+        headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+      });
     }
 
-    // 生成配置
-    const config = configType === 'simple'
-      ? MihomoConfigGenerator.generateSimpleConfig(proxies, ruleMode)
-      : MihomoConfigGenerator.generateConfig(proxies, ruleMode);
-
-    // 转换为 YAML
-    const yaml = MihomoConfigGenerator.configToYaml(config);
+    const { yaml } = generateProxyConfig({
+      proxies,
+      configType,
+      ruleMode,
+    });
 
     // 开发环境日志
     if (process.env.NODE_ENV === 'development') {
@@ -79,22 +125,17 @@ export async function POST(request: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        ...corsHeaders,
+        ...createRateHeaders(rate.remaining, rate.retryAfterSeconds)
       }
     });
 
   } catch (error) {
     console.error('节点转换失败 (POST):', error);
 
-    return NextResponse.json(
-      {
-        error: '节点转换失败',
-        details: error instanceof Error ? error.message : '服务器内部错误'
-      },
-      { status: 500 }
-    );
+    return fail(internalServerError('节点转换失败', error instanceof Error ? error.message : undefined), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
   }
 }
 
@@ -116,6 +157,22 @@ export async function POST(request: NextRequest) {
  * /api/sub?url=vless://xxx&type=simple&mode=blacklist
  */
 export async function GET(request: NextRequest) {
+  const cors = evaluateCors(request);
+  const corsHeaders = buildCorsHeaders(cors, 'GET, POST, OPTIONS');
+  if (!cors.allowed) {
+    return fail(forbidden('跨域请求来源不在白名单中'), { headers: corsHeaders });
+  }
+
+  const rate = checkRateLimit(request, 'sub:get', {
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+  if (!rate.success) {
+    return fail(tooManyRequests('请求过于频繁，请稍后再试'), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     
@@ -137,10 +194,9 @@ export async function GET(request: NextRequest) {
     
     // 检查是否有节点链接
     if (proxyLinks.length === 0) {
-      return NextResponse.json(
-        { error: '缺少节点链接参数 (url 或 urls)' },
-        { status: 400 }
-      );
+      return fail(badRequest('缺少节点链接参数 (url 或 urls)'), {
+        headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+      });
     }
 
     // 获取配置类型 (simple 或 full，默认为 full)
@@ -154,23 +210,19 @@ export async function GET(request: NextRequest) {
       console.log(`📡 节点转换请求: 链接数=${proxyLinks.length}, Type=${configType}, Mode=${ruleMode}`);
     }
 
-    // 解析服务节点
-    const proxies = ProxyParser.parseMultipleProxies(proxyLinks);
+    const { proxies } = parseProxyLinks(proxyLinks);
     
     if (proxies.length === 0) {
-      return NextResponse.json(
-        { error: '没有找到有效的服务节点，请检查连接串格式' },
-        { status: 400 }
-      );
+      return fail(badRequest('没有找到有效的服务节点，请检查连接串格式'), {
+        headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+      });
     }
 
-    // 生成配置
-    const config = configType === 'simple' 
-      ? MihomoConfigGenerator.generateSimpleConfig(proxies, ruleMode)
-      : MihomoConfigGenerator.generateConfig(proxies, ruleMode);
-
-    // 转换为 YAML
-    const yaml = MihomoConfigGenerator.configToYaml(config);
+    const { yaml } = generateProxyConfig({
+      proxies,
+      configType,
+      ruleMode,
+    });
 
     // 开发环境日志
     if (process.env.NODE_ENV === 'development') {
@@ -186,22 +238,17 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        ...corsHeaders,
+        ...createRateHeaders(rate.remaining, rate.retryAfterSeconds)
       }
     });
 
   } catch (error) {
     console.error('节点转换失败:', error);
     
-    return NextResponse.json(
-      { 
-        error: '节点转换失败',
-        details: error instanceof Error ? error.message : '服务器内部错误'
-      },
-      { status: 500 }
-    );
+    return fail(internalServerError('节点转换失败', error instanceof Error ? error.message : undefined), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
   }
 }
 

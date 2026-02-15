@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
-import { MihomoConfigGenerator } from '@/lib/mihomo-config';
+import { generateProxyConfig } from '@/features/proxy/application/generate-config';
 import type { ParsedProxy, RuleMode } from '@/types/proxy';
 
 export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) {
@@ -18,8 +18,12 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
     }
 
     try {
-      const config = MihomoConfigGenerator.generateConfig(proxiesList, ruleMode);
-      const yamlOutput = MihomoConfigGenerator.configToYaml(config);
+      const { yaml } = generateProxyConfig({
+        proxies: proxiesList,
+        configType: 'full',
+        ruleMode,
+      });
+      const yamlOutput = yaml;
       setOutputYaml(yamlOutput);
       if (showSuccessToast) {
         toast.success(`成功生成配置文件，包含 ${proxiesList.length} 个节点`);
@@ -95,10 +99,20 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
       });
       
       if (!response.ok) {
-        throw new Error('上传配置失败');
+        const errorPayload = await response.json().catch(() => null) as { success?: boolean; error?: { message?: string } } | null;
+        throw new Error(errorPayload?.error?.message || '上传配置失败');
       }
-      
-      const { id } = await response.json();
+
+      const payload = await response.json() as {
+        success: boolean;
+        data: {
+          id: string;
+          expiresAt?: string;
+          warning?: string;
+        };
+      };
+
+      const { id, expiresAt, warning } = payload.data;
       
       // 生成配置链接（自动适配当前域名）
       const baseUrl = window.location.origin;
@@ -218,7 +232,8 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
         qrWindow.document.close();
       }
       
-      toast.success("配置二维码已生成，有效期30分钟");
+      const expireTip = expiresAt ? `预计到期时间：${new Date(expiresAt).toLocaleString()}` : '默认有效期30分钟';
+      toast.success(`配置二维码已生成，${expireTip}${warning ? '。' + warning : ''}`);
     } catch (error) {
       console.error("生成二维码失败:", error);
       toast.error("生成二维码失败");

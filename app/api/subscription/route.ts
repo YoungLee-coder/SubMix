@@ -1,175 +1,194 @@
-// 配置托管API端点
-// 支持Vercel等云平台部署，自动适配域名
+import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import { fail, ok } from "@/lib/http/response";
+import {
+  badRequest,
+  forbidden,
+  internalServerError,
+  notFound,
+  payloadTooLarge,
+  serviceUnavailable,
+  tooManyRequests,
+} from "@/lib/http/errors";
+import { buildCorsHeaders, evaluateCors } from "@/lib/security/cors";
+import { parseJsonBody, parseMaxBytes } from "@/lib/security/request-validation";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import {
+  getConfigById,
+} from "@/lib/subscription-cache";
+import { publishSubscription } from "@/features/proxy/application/publish-subscription";
 
-import { NextRequest, NextResponse } from 'next/server';
+const createConfigSchema = z.object({
+  config: z.string().min(1, "配置内容不能为空"),
+});
 
-// 存储配置的临时缓存 (生产环境建议使用Redis等持久化存储)
-const configCache = new Map<string, { config: string; timestamp: number }>();
+const SUBSCRIPTION_BODY_MAX_BYTES = parseMaxBytes(
+  "MAX_SUBSCRIPTION_BODY_BYTES",
+  300 * 1024,
+);
 
-// 配置过期时间（30分钟）
-const EXPIRE_TIME = 30 * 60 * 1000;
+function createRateLimitHeaders(remaining: number, retryAfterSeconds: number): Record<string, string> {
+  return {
+    "X-RateLimit-Remaining": String(remaining),
+    "Retry-After": String(retryAfterSeconds),
+  };
+}
 
-// 清理过期配置的函数
-function cleanExpiredConfigs() {
-  const now = Date.now();
-  let cleanedCount = 0;
-  
-  for (const [key, value] of configCache.entries()) {
-    if (now - value.timestamp > EXPIRE_TIME) {
-      configCache.delete(key);
-      cleanedCount++;
-    }
+export async function OPTIONS(request: NextRequest) {
+  const cors = evaluateCors(request);
+  if (!cors.allowed) {
+    return fail(forbidden("跨域请求来源不在白名单中"));
   }
-  
-  // 开发环境下打印清理日志
-  if (process.env.NODE_ENV === 'development' && cleanedCount > 0) {
-    console.log(`🧹 清理了 ${cleanedCount} 个过期配置，当前缓存大小: ${configCache.size}`);
-  }
-  
-  return cleanedCount;
+
+  return new NextResponse(null, {
+    status: 204,
+    headers: buildCorsHeaders(cors, "GET, POST, OPTIONS"),
+  });
 }
 
-// 检查单个配置是否过期
-function isConfigExpired(timestamp: number): boolean {
-  return Date.now() - timestamp > EXPIRE_TIME;
-}
-
-// 获取配置剩余有效时间（分钟）
-function getRemainingTime(timestamp: number): number {
-  const remaining = EXPIRE_TIME - (Date.now() - timestamp);
-  return Math.max(0, Math.ceil(remaining / (60 * 1000)));
-}
-
-// 定时清理器 - 每5分钟自动清理一次过期数据
-let cleanupInterval: NodeJS.Timeout | null = null;
-
-function startPeriodicCleanup() {
-  // 避免重复启动定时器
-  if (cleanupInterval) return;
-  
-  cleanupInterval = setInterval(() => {
-    const cleaned = cleanExpiredConfigs();
-    if (process.env.NODE_ENV === 'development' && cleaned > 0) {
-      console.log(`⏰ 定时清理完成，清理了 ${cleaned} 个过期配置`);
-    }
-  }, 5 * 60 * 1000); // 每5分钟执行一次
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔄 启动定时清理器，每5分钟清理一次过期配置');
-  }
-}
-
-// 启动定时清理（在模块加载时执行）
-startPeriodicCleanup();
-
-// 生成唯一ID
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
-}
-
-// POST: 存储配置并返回配置ID
 export async function POST(request: NextRequest) {
+  const cors = evaluateCors(request);
+  const corsHeaders = buildCorsHeaders(cors, "GET, POST, OPTIONS");
+
+  if (!cors.allowed) {
+    return fail(forbidden("跨域请求来源不在白名单中"), { headers: corsHeaders });
+  }
+
+  const rateLimit = checkRateLimit(request, "subscription:post", {
+    limit: 20,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.success) {
+    return fail(tooManyRequests("请求过于频繁，请稍后再试"), {
+      headers: {
+        ...corsHeaders,
+        ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+      },
+    });
+  }
+
   try {
-    const { config } = await request.json();
-    
-    if (!config || typeof config !== 'string') {
-      return NextResponse.json(
-        { error: '配置内容不能为空' },
-        { status: 400 }
-      );
+    const parsed = await parseJsonBody(request, createConfigSchema, SUBSCRIPTION_BODY_MAX_BYTES);
+    if (!parsed.success) {
+      const validationError =
+        parsed.status === 413
+          ? payloadTooLarge(parsed.error, parsed.issues)
+          : badRequest(parsed.error, parsed.issues);
+
+      return fail(validationError, {
+        headers: {
+          ...corsHeaders,
+          ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+        },
+      });
     }
 
-    // 清理过期配置
-    cleanExpiredConfigs();
-    
-    // 生成唯一ID并存储配置
-    const id = generateId();
-    const timestamp = Date.now();
-    configCache.set(id, {
-      config,
-      timestamp
-    });
+    const published = publishSubscription(parsed.data.config);
+    if (!published.success) {
+      const publishError =
+        published.status === 413
+          ? payloadTooLarge(published.error ?? "配置内容过大")
+          : published.status === 503
+            ? serviceUnavailable(published.error ?? "缓存已满，请稍后重试")
+            : internalServerError(published.error ?? "配置保存失败");
 
-    // 开发环境下记录配置存储
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`💾 新配置存储: ID=${id}, 缓存大小=${configCache.size}, 有效期=30分钟`);
+      return fail(publishError, {
+        headers: {
+          ...corsHeaders,
+          ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+        },
+      });
     }
 
-    return NextResponse.json({ 
-      id,
-      expiresIn: 30, // 30分钟
-      expiresAt: new Date(timestamp + EXPIRE_TIME).toISOString()
-    });
-  } catch (error) {
-    console.error('存储配置失败:', error);
-    return NextResponse.json(
-      { error: '服务器内部错误' },
-      { status: 500 }
+    return ok(
+      {
+        id: published.id,
+        expiresIn: published.expiresInMinutes,
+        expiresAt: published.expiresAt,
+        warning: "临时链接可能因缓存淘汰提前失效",
+      },
+      {
+        headers: {
+          ...corsHeaders,
+          ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+        },
+      },
     );
+  } catch (error) {
+    console.error("存储配置失败:", error);
+    return fail(internalServerError("服务器内部错误"), {
+      headers: {
+        ...corsHeaders,
+        ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+      },
+    });
   }
 }
 
-// GET: 根据ID获取配置
 export async function GET(request: NextRequest) {
+  const cors = evaluateCors(request);
+  const corsHeaders = buildCorsHeaders(cors, "GET, POST, OPTIONS");
+
+  if (!cors.allowed) {
+    return fail(forbidden("跨域请求来源不在白名单中"), { headers: corsHeaders });
+  }
+
+  const rateLimit = checkRateLimit(request, "subscription:get", {
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.success) {
+    return fail(tooManyRequests("请求过于频繁，请稍后再试"), {
+      headers: {
+        ...corsHeaders,
+        ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+      },
+    });
+  }
+
   try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    
+    const id = new URL(request.url).searchParams.get("id");
     if (!id) {
-      return NextResponse.json(
-        { error: '缺少配置ID' },
-        { status: 400 }
-      );
+      return fail(badRequest("缺少配置ID"), {
+        headers: {
+          ...corsHeaders,
+          ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+        },
+      });
     }
 
-    // 清理过期配置
-    cleanExpiredConfigs();
-    
-    const configData = configCache.get(id);
-    
-    if (!configData) {
-      return NextResponse.json(
-        { error: '配置不存在或已过期' },
-        { status: 404 }
-      );
+    const entry = getConfigById(id);
+    if (!entry) {
+      return fail(notFound("配置不存在或已过期"), {
+        headers: {
+          ...corsHeaders,
+          ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+        },
+      });
     }
 
-    // 检查配置是否已过期
-    if (isConfigExpired(configData.timestamp)) {
-      configCache.delete(id); // 立即删除过期配置
-      return NextResponse.json(
-        { error: '配置已过期，请重新生成' },
-        { status: 410 } // 410 Gone - 资源已过期
-      );
-    }
-
-    // 开发环境下记录配置访问
-    if (process.env.NODE_ENV === 'development') {
-      const remainingTime = getRemainingTime(configData.timestamp);
-      console.log(`📥 配置访问: ID=${id}, 剩余时间=${remainingTime}分钟`);
-    }
-
-    // 返回配置文件，设置正确的Content-Type和CORS头
-    return new NextResponse(configData.config, {
+    return new NextResponse(entry.config, {
       status: 200,
       headers: {
-        'Content-Type': 'text/yaml; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="config.yaml"',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      }
+        "Content-Type": "text/yaml; charset=utf-8",
+        "Content-Disposition": "attachment; filename=\"config.yaml\"",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+        ...corsHeaders,
+        ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+      },
     });
   } catch (error) {
-    console.error('获取配置失败:', error);
-    return NextResponse.json(
-      { error: '服务器内部错误' },
-      { status: 500 }
-    );
+    console.error("获取配置失败:", error);
+    return fail(internalServerError("服务器内部错误"), {
+      headers: {
+        ...corsHeaders,
+        ...createRateLimitHeaders(rateLimit.remaining, rateLimit.retryAfterSeconds),
+      },
+    });
   }
 }
 

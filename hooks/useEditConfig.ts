@@ -1,7 +1,17 @@
 // 编辑配置相关的 hooks
 
 import { useState, useEffect } from 'react';
-import type { EditConfigResponse, ProtocolEditConfig } from '@/types/proxy';
+import type { ProtocolEditConfig } from '@/types/proxy';
+
+interface EditConfigApiResponse {
+  success: boolean;
+  data?: {
+    protocols: ProtocolEditConfig[];
+  };
+  error?: {
+    message?: string;
+  };
+}
 
 export function useEditConfig() {
   const [configs, setConfigs] = useState<ProtocolEditConfig[]>([]);
@@ -13,13 +23,13 @@ export function useEditConfig() {
       try {
         setLoading(true);
         const response = await fetch('/api/proxy-config');
-        const data: EditConfigResponse = await response.json();
-        
-        if (data.success) {
-          setConfigs(data.protocols);
+        const data: EditConfigApiResponse = await response.json();
+
+        if (data.success && data.data?.protocols) {
+          setConfigs(data.data.protocols);
           setError(null);
         } else {
-          setError(data.error || '获取配置失败');
+          setError(data.error?.message || '获取配置失败');
         }
       } catch (err) {
         console.error('获取编辑配置失败:', err);

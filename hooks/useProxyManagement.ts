@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { ProxyParser } from '@/lib/proxy-parser';
+import { parseProxyLinks } from '@/features/proxy/application/parse-links';
 import type { ParsedProxy, InputMode, RuleMode } from '@/types/proxy';
 
 export function useProxyManagement() {
@@ -12,7 +12,7 @@ export function useProxyManagement() {
 
   // 生成唯一ID
   const generateId = useCallback(() => {
-    return Math.random().toString(36).substr(2, 9);
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 12);
   }, []);
 
   // 添加单个节点
@@ -23,7 +23,8 @@ export function useProxyManagement() {
     }
 
     try {
-      const proxy = ProxyParser.parseProxy(link.trim());
+      const parsed = parseProxyLinks([link.trim()]);
+      const proxy = parsed.proxies[0] ?? null;
       if (!proxy) {
         toast.error("解析失败，请检查链接格式");
         return false;
@@ -57,28 +58,14 @@ export function useProxyManagement() {
       return false;
     }
 
-    let successCount = 0;
-    let failCount = 0;
-    const newParsedProxies: ParsedProxy[] = [];
+    const parsed = parseProxyLinks(linkArray);
+    const newParsedProxies: ParsedProxy[] = parsed.proxies.map((proxy) => ({
+      ...proxy,
+      id: generateId()
+    }));
 
-    linkArray.forEach((link, index) => {
-      try {
-        const proxy = ProxyParser.parseProxy(link.trim());
-        if (proxy) {
-          const parsedProxy: ParsedProxy = {
-            ...proxy,
-            id: generateId()
-          };
-          newParsedProxies.push(parsedProxy);
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch (error) {
-        console.error(`解析第 ${index + 1} 个链接失败:`, error);
-        failCount++;
-      }
-    });
+    const successCount = newParsedProxies.length;
+    const failCount = parsed.invalidCount;
 
     if (newParsedProxies.length > 0) {
       setParsedProxies(prev => [...prev, ...newParsedProxies]);

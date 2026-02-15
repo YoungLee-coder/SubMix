@@ -1,39 +1,65 @@
-// 配置缓存统计API - 仅开发环境可用
+import { NextRequest, NextResponse } from "next/server";
+import { fail, ok } from "@/lib/http/response";
+import { forbidden, internalServerError, tooManyRequests } from "@/lib/http/errors";
+import { buildCorsHeaders, evaluateCors } from "@/lib/security/cors";
+import { checkRateLimit } from "@/lib/security/rate-limit";
+import { getCacheStats } from "@/lib/subscription-cache";
 
-import { NextResponse } from 'next/server';
+function createRateHeaders(remaining: number, retryAfterSeconds: number): Record<string, string> {
+  return {
+    "X-RateLimit-Remaining": String(remaining),
+    "Retry-After": String(retryAfterSeconds),
+  };
+}
 
-// 由于无法直接访问父级的 configCache，这里创建一个统计接口
-// 在生产环境中应该移除或加强安全验证
+export async function OPTIONS(request: NextRequest) {
+  const cors = evaluateCors(request);
+  if (!cors.allowed) {
+    return fail(forbidden("跨域请求来源不在白名单中"));
+  }
 
-export async function GET() {
-  // 仅在开发环境提供统计信息
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json(
-      { error: '此接口仅在开发环境可用' },
-      { status: 403 }
-    );
+  return new NextResponse(null, {
+    status: 204,
+    headers: buildCorsHeaders(cors, "GET, OPTIONS"),
+  });
+}
+
+export async function GET(request: NextRequest) {
+  const cors = evaluateCors(request);
+  const corsHeaders = buildCorsHeaders(cors, "GET, OPTIONS");
+  if (!cors.allowed) {
+    return fail(forbidden("跨域请求来源不在白名单中"), { headers: corsHeaders });
+  }
+
+  const rate = checkRateLimit(request, "subscription:stats:get", {
+    limit: 20,
+    windowMs: 60 * 1000,
+  });
+  if (!rate.success) {
+    return fail(tooManyRequests("请求过于频繁，请稍后再试"), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
+  }
+
+  if (process.env.NODE_ENV !== "development") {
+    return fail(forbidden("此接口仅在开发环境可用"), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
   }
 
   try {
-    // 这里由于作用域限制，我们返回一个说明
-    return NextResponse.json({
-      message: '缓存统计',
-      note: '详细统计信息请查看服务器控制台日志',
-      endpoints: {
-        'POST /api/subscription': '存储配置并获取配置ID',
-        'GET /api/subscription?id=xxx': '获取指定配置',
-        'GET /api/subscription/stats': '获取缓存统计（仅开发环境）'
-      },
-      expiration: {
-        time: '30分钟',
-        cleanup: '每5分钟自动清理过期数据',
-        immediate: '访问时检查并立即删除过期数据'
+    return ok({
+      cache: getCacheStats(),
+      note: "缓存为临时内存存储，不保证跨实例或重启可用",
+    }, {
+      headers: {
+        ...corsHeaders,
+        ...createRateHeaders(rate.remaining, rate.retryAfterSeconds),
       }
     });
   } catch {
-    return NextResponse.json(
-      { error: '获取统计信息失败' },
-      { status: 500 }
-    );
+    return fail(internalServerError("获取统计信息失败"), {
+      headers: { ...corsHeaders, ...createRateHeaders(rate.remaining, rate.retryAfterSeconds) }
+    });
   }
 }

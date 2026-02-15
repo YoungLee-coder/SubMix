@@ -1,7 +1,5 @@
 // 协议支持说明卡片组件
 
-"use client";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Shield, Network, Server, AlertTriangle } from "lucide-react";

@@ -23,9 +23,13 @@ An enterprise intranet protocol configuration management tool that parses and co
 ```bash
 pnpm install
 pnpm dev
+pnpm typecheck
+pnpm test:run
 ```
 
 ### API Usage
+
+> Subscription cache is in-memory only. Links may become unavailable after instance restart, cross-instance routing, or FIFO eviction under high load.
 
 #### POST (Recommended)
 
@@ -55,6 +59,17 @@ https://your-domain.com/api/sub?url=vless://...&url=ss://...&type=full&mode=whit
 | type | `simple` (minimal) / `full` (complete) | full |
 | mode | `whitelist` / `blacklist` | whitelist |
 
+#### Security & Runtime Env
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CORS_ALLOWED_ORIGINS` | Comma-separated CORS allowlist in production | Empty (same-origin only) |
+| `MAX_CACHE_ITEMS` | Max in-memory subscription entries | `500` |
+| `MAX_CONFIG_BYTES` | Max single subscription config size | `262144` |
+| `MAX_SUBSCRIPTION_BODY_BYTES` | Max POST body for `/api/subscription` | `307200` |
+| `MAX_SUB_REQUEST_BYTES` | Max POST body for `/api/sub` | `262144` |
+| `MAX_CONVERT_REQUEST_BYTES` | Max POST body for `/api/convert` | `262144` |
+
 ### Tech Stack
 
 Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
@@ -80,9 +95,13 @@ Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
 ```bash
 pnpm install
 pnpm dev
+pnpm typecheck
+pnpm test:run
 ```
 
 ### API 使用
+
+> 订阅缓存为纯内存临时存储。实例重启、跨实例访问或高负载 FIFO 淘汰时，链接可能提前失效。
 
 #### POST 请求（推荐）
 
@@ -111,6 +130,17 @@ https://your-domain.com/api/sub?url=vless://...&url=ss://...&type=full&mode=whit
 | urls/url | 服务节点连接串 | - |
 | type | `simple` 精简版 / `full` 完整版 | full |
 | mode | `whitelist` 白名单 / `blacklist` 黑名单 | whitelist |
+
+#### 安全与运行环境变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `CORS_ALLOWED_ORIGINS` | 生产环境 CORS 白名单，多个值用逗号分隔 | 空（仅同源） |
+| `MAX_CACHE_ITEMS` | 订阅内存缓存最大条目数 | `500` |
+| `MAX_CONFIG_BYTES` | 单条订阅配置最大字节数 | `262144` |
+| `MAX_SUBSCRIPTION_BODY_BYTES` | `/api/subscription` POST 请求体上限 | `307200` |
+| `MAX_SUB_REQUEST_BYTES` | `/api/sub` POST 请求体上限 | `262144` |
+| `MAX_CONVERT_REQUEST_BYTES` | `/api/convert` POST 请求体上限 | `262144` |
 
 ### 技术栈
 
