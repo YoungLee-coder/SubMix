@@ -1,6 +1,8 @@
 # SubMix
 
-[English](#english) | [中文](#中文)
+[English](#english) | [中文](#中文) 
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/YoungLee-coder/SubMix)
 
 ---
 
