@@ -6,9 +6,22 @@ import QRCode from 'qrcode';
 import { generateProxyConfig } from '@/features/proxy/application/generate-config';
 import type { ParsedProxy, RuleMode } from '@/types/proxy';
 
+export interface QRDialogState {
+  open: boolean;
+  qrDataURL: string;
+  subscriptionUrl: string;
+  expireTip: string;
+}
+
 export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) {
   const [outputYaml, setOutputYaml] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [qrDialog, setQrDialog] = useState<QRDialogState>({
+    open: false,
+    qrDataURL: "",
+    subscriptionUrl: "",
+    expireTip: "",
+  });
 
   // 生成配置的核心方法
   const generateConfig = useCallback((proxiesList: ParsedProxy[], showSuccessToast = true) => {
@@ -23,8 +36,7 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
         configType: 'full',
         ruleMode,
       });
-      const yamlOutput = yaml;
-      setOutputYaml(yamlOutput);
+      setOutputYaml(yaml);
       if (showSuccessToast) {
         toast.success(`成功生成配置文件，包含 ${proxiesList.length} 个节点`);
       }
@@ -74,7 +86,7 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
   // 复制配置到剪贴板
   const copyConfig = useCallback(async () => {
     if (!outputYaml) return;
-    
+
     try {
       await navigator.clipboard.writeText(outputYaml);
       toast.success("配置已复制到剪贴板");
@@ -84,155 +96,55 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
     }
   }, [outputYaml]);
 
-  // 生成二维码
+  // 生成二维码（改为在 Dialog 中展示）
   const generateQR = useCallback(async () => {
     if (!outputYaml) return;
-    
+
     try {
-      // 将配置上传到配置托管API获取配置ID
       const response = await fetch('/api/subscription', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ config: outputYaml })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: outputYaml }),
       });
-      
+
       if (!response.ok) {
-        const errorPayload = await response.json().catch(() => null) as { success?: boolean; error?: { message?: string } } | null;
+        const errorPayload = await response.json().catch(() => null) as {
+          error?: { message?: string };
+        } | null;
         throw new Error(errorPayload?.error?.message || '上传配置失败');
       }
 
       const payload = await response.json() as {
         success: boolean;
-        data: {
-          id: string;
-          expiresAt?: string;
-          warning?: string;
-        };
+        data: { id: string; expiresAt?: string; warning?: string };
       };
 
       const { id, expiresAt, warning } = payload.data;
-      
-      // 生成配置链接（自动适配当前域名）
       const baseUrl = window.location.origin;
       const subscriptionUrl = `${baseUrl}/api/subscription?id=${id}`;
-      
-      // 开发环境下记录配置链接
+
       if (process.env.NODE_ENV === 'development') {
         console.log('生成的配置链接:', subscriptionUrl);
       }
-      
-      // 将配置链接编码到二维码中
+
       const qrDataURL = await QRCode.toDataURL(subscriptionUrl, {
         width: 512,
         margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        },
-        errorCorrectionLevel: 'M'
+        color: { dark: '#000000', light: '#FFFFFF' },
+        errorCorrectionLevel: 'M',
       });
-      
-      // 创建一个新的窗口显示二维码
-      const qrWindow = window.open('', '_blank', 'width=600,height=700,resizable=yes,scrollbars=yes');
-      if (qrWindow) {
-        qrWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>YAML 配置二维码</title>
-              <meta charset="utf-8">
-              <style>
-                body {
-                  margin: 0;
-                  padding: 20px;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                  background: #f5f5f5;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  min-height: 100vh;
-                }
-                .container {
-                  background: white;
-                  border-radius: 12px;
-                  padding: 30px;
-                  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                  text-align: center;
-                  max-width: 500px;
-                }
-                h1 {
-                  color: #333;
-                  margin-bottom: 20px;
-                  font-size: 24px;
-                }
-                .qr-code {
-                  border: 1px solid #e0e0e0;
-                  border-radius: 8px;
-                  padding: 20px;
-                  background: white;
-                  margin: 20px 0;
-                }
-                .instructions {
-                  color: #666;
-                  font-size: 14px;
-                  line-height: 1.6;
-                  margin-top: 20px;
-                  text-align: left;
-                }
-                .button {
-                  background: #007bff;
-                  color: white;
-                  border: none;
-                  padding: 12px 24px;
-                  border-radius: 6px;
-                  cursor: pointer;
-                  font-size: 14px;
-                  margin: 10px 5px;
-                  text-decoration: none;
-                  display: inline-block;
-                  transition: background 0.2s;
-                }
-                .button:hover {
-                  background: #0056b3;
-                }
-                .button.secondary {
-                  background: #6c757d;
-                }
-                .button.secondary:hover {
-                  background: #545b62;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <h1>📱 配置链接二维码</h1>
-                <div class="qr-code">
-                  <img src="${qrDataURL}" alt="配置链接二维码" style="max-width: 100%; height: auto;">
-                </div>
-                <div class="instructions">
-                  <strong>使用说明：</strong><br>
-                  1. 使用支持 Mihomo 内核的客户端扫描上方二维码<br>
-                  2. 客户端会自动识别并提示导入配置<br>
-                  3. 确认导入后即可使用配置文件<br>
-                  4. 配置链接有效期为30分钟，请及时导入
-                </div>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 12px; color: #666;">
-                  <strong>配置链接：</strong><br>
-                  <code style="word-break: break-all; font-size: 11px;">${subscriptionUrl}</code>
-                </div>
-                <a href="${qrDataURL}" download="subscription-qrcode.png" class="button">下载二维码</a>
-                <button class="button secondary" onclick="navigator.clipboard.writeText('${subscriptionUrl}').then(() => alert('配置链接已复制')).catch(() => alert('复制失败'))">复制链接</button>
-                <button class="button secondary" onclick="window.close()">关闭窗口</button>
-              </div>
-            </body>
-          </html>
-        `);
-        qrWindow.document.close();
-      }
-      
-      const expireTip = expiresAt ? `预计到期时间：${new Date(expiresAt).toLocaleString()}` : '默认有效期30分钟';
+
+      const expireTip = expiresAt
+        ? `预计到期时间：${new Date(expiresAt).toLocaleString()}`
+        : '默认有效期30分钟';
+
+      setQrDialog({
+        open: true,
+        qrDataURL,
+        subscriptionUrl,
+        expireTip,
+      });
+
       toast.success(`配置二维码已生成，${expireTip}${warning ? '。' + warning : ''}`);
     } catch (error) {
       console.error("生成二维码失败:", error);
@@ -240,13 +152,18 @@ export function useConfigGeneration(proxies: ParsedProxy[], ruleMode: RuleMode) 
     }
   }, [outputYaml]);
 
+  const setQrDialogOpen = useCallback((open: boolean) => {
+    setQrDialog(prev => ({ ...prev, open }));
+  }, []);
+
   return {
     outputYaml,
     isProcessing,
+    qrDialog,
+    setQrDialogOpen,
     handleGenerateConfig,
     downloadConfig,
     copyConfig,
     generateQR,
   };
 }
-

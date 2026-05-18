@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # 暂时禁用 — 将 open-pull-requests-limit 设为 0 即可阻止 Dependabot 创建 PR
   # npm 依赖更新
   - package-ecosystem: "npm"
     directory: "/"
@@ -8,7 +9,7 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Shanghai"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     # 自动 rebase 避免冲突
     rebase-strategy: "auto"
     commit-message:
@@ -64,6 +65,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "chore(ci)"
 

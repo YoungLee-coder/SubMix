@@ -6,8 +6,22 @@ export interface ProxyNode {
   server: string;
   port: number;
   id?: string;
-   
+
+  /**
+   * 协议特定字段通过索引签名支持。
+   * 各解析器内部使用 `ProxyNode & XxxConfig` 交叉类型保证类型安全，
+   * 消费端应优先通过 getNodeField() 辅助函数访问动态字段。
+   */
   [key: string]: any;
+}
+
+/**
+ * 类型安全地访问 ProxyNode 的动态字段
+ */
+export function getNodeField<T>(node: ProxyNode, key: string, fallback: T): T {
+  const value = node[key];
+  if (value === undefined || value === null) return fallback;
+  return value as T;
 }
 
 /**

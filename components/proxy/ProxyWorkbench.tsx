@@ -6,6 +6,7 @@ import { ConfigOptionsCard } from "@/components/proxy/ConfigOptionsCard";
 import { NodeListCard } from "@/components/proxy/NodeListCard";
 import { ConfigOutputCard } from "@/components/proxy/ConfigOutputCard";
 import { EditNodeDialog } from "@/components/proxy/EditNodeDialog";
+import { QRCodeDialog } from "@/components/proxy/QRCodeDialog";
 import { useProxyManagement } from "@/hooks/useProxyManagement";
 import { useConfigGeneration } from "@/hooks/useConfigGeneration";
 import type { ParsedProxy } from "@/types/proxy";
@@ -31,6 +32,8 @@ export function ProxyWorkbench() {
   const {
     outputYaml,
     isProcessing,
+    qrDialog,
+    setQrDialogOpen,
     handleGenerateConfig,
     downloadConfig,
     copyConfig,
@@ -98,6 +101,14 @@ export function ProxyWorkbench() {
         onClose={handleCloseEdit}
         proxy={editingProxy}
         onSave={handleSaveEdit}
+      />
+
+      <QRCodeDialog
+        open={qrDialog.open}
+        onOpenChange={setQrDialogOpen}
+        qrDataURL={qrDialog.qrDataURL}
+        subscriptionUrl={qrDialog.subscriptionUrl}
+        expireTip={qrDialog.expireTip}
       />
     </>
   );
