@@ -322,10 +322,10 @@ function NodeItem({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
+                <AlertDialogContent className="max-h-[80vh] flex flex-col">
+                  <AlertDialogHeader className="overflow-hidden">
                     <AlertDialogTitle>删除节点</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogDescription className="break-all line-clamp-3">
                       确定要删除节点 &quot;{proxy.name}&quot; 吗？此操作不可撤销。
                     </AlertDialogDescription>
                   </AlertDialogHeader>
