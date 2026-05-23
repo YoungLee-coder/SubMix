@@ -191,6 +191,7 @@ function NodeItem({
     switch (displayType) {
       case "vless": 
       case "trojan": 
+      case "anytls": 
         return <Shield className={iconClass} />;
       case "hysteria2": 
         return <Network className={iconClass} />;

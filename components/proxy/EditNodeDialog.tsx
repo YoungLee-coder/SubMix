@@ -232,6 +232,7 @@ export function EditNodeDialog({
     switch (displayType) {
       case "vless": 
       case "trojan": 
+      case "anytls": 
         return <Shield className={iconClass} />;
       case "hysteria2": 
         return <Network className={iconClass} />;
@@ -385,6 +386,7 @@ function getGroupName(groupKey: string): string {
     connection: '连接配置',
     'quic-go': 'QUIC-GO 配置',
     'trojan-go': 'Trojan-Go 配置',
+    session: '会话管理',
     advanced: '高级参数'
   };
   

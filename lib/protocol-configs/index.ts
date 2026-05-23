@@ -24,3 +24,4 @@ export { hysteriaConfig } from './protocols/hysteria.config';
 export { hysteria2Config } from './protocols/hysteria2.config';
 export { shadowsocksConfig, ss2022Config } from './protocols/shadowsocks.config';
 export { trojanConfig } from './protocols/trojan.config';
+export { anytlsConfig } from './protocols/anytls.config';

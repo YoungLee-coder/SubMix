@@ -9,6 +9,7 @@ import { hysteriaConfig } from './protocols/hysteria.config';
 import { hysteria2Config } from './protocols/hysteria2.config';
 import { shadowsocksConfig, ss2022Config } from './protocols/shadowsocks.config';
 import { trojanConfig } from './protocols/trojan.config';
+import { anytlsConfig } from './protocols/anytls.config';
 
 /**
  * 获取所有协议配置
@@ -20,7 +21,8 @@ export function getAllProtocolConfigs(): ProtocolEditConfig[] {
     hysteria2Config,
     shadowsocksConfig,
     ss2022Config,
-    trojanConfig
+    trojanConfig,
+    anytlsConfig
   ];
 }
 
@@ -39,7 +41,7 @@ export function getProtocolConfigsByCategory() {
   
   return {
     modern: configs.filter(config => 
-      ['vless', 'hysteria', 'hysteria2'].includes(config.type)
+      ['vless', 'hysteria', 'hysteria2', 'anytls'].includes(config.type)
     ),
     classic: configs.filter(config => 
       ['ss', 'ss2022', 'trojan'].includes(config.type)

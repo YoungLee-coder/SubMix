@@ -72,6 +72,14 @@ export function ProtocolSupportCard() {
                 format="trojan://password@server:port?network=ws&sni=domain&client-fingerprint=random#name"
                 description="支持 TCP/WS/gRPC 传输，TLS/REALITY 加密，trojan-go SS AEAD，SMUX 多路复用"
               />
+
+              <ProtocolExample
+                name="AnyTLS"
+                icon={<Shield className="h-3 w-3" />}
+                color="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
+                format="anytls://password@server:port?sni=example.com&alpn=h2,http/1.1&client-fingerprint=chrome#name"
+                description="基于 TLS 的新型协议，支持空闲会话管理、客户端指纹模拟"
+              />
             </div>
           </div>
         </div>

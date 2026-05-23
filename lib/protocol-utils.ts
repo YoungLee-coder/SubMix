@@ -36,6 +36,11 @@ export const protocolIconMap: ProtocolIconMap = {
     color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     name: 'Trojan'
   },
+  anytls: {
+    icon: 'Shield',
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
+    name: 'AnyTLS'
+  },
   default: {
     icon: 'Server',
     color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
@@ -56,6 +61,7 @@ export function getProtocolIcon(type: string): LucideIcon {
   switch (type) {
     case "vless": 
     case "trojan": 
+    case "anytls": 
       return Shield;
     case "hysteria":
     case "hysteria2": 
@@ -86,6 +92,7 @@ export function getProtocolIconBackground(type: string): string {
     'ss': 'bg-green-100 dark:bg-green-900/20',
     'ss2022': 'bg-emerald-100 dark:bg-emerald-900/20',
     'trojan': 'bg-red-100 dark:bg-red-900/20',
+    'anytls': 'bg-cyan-100 dark:bg-cyan-900/20',
     'default': 'bg-gray-100 dark:bg-gray-900/20'
   };
   

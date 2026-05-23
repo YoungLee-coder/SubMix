@@ -192,6 +192,19 @@ export interface ShadowsocksConfig {
   'server-port'?: number;
 }
 
+export interface AnytlsConfig {
+  password: string;
+  sni?: string;
+  alpn?: string[];
+  'skip-cert-verify'?: boolean;
+  'client-fingerprint'?: string;
+  fingerprint?: string;
+  udp?: boolean;
+  'idle-session-check-interval'?: number;
+  'idle-session-timeout'?: number;
+  'min-idle-session'?: number;
+}
+
 export interface TrojanConfig {
   password: string;
   sni?: string;

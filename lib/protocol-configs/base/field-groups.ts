@@ -19,6 +19,7 @@ export const fieldGroups = {
   connection: '连接配置',
   'quic-go': 'QUIC-GO 配置',
   'trojan-go': 'Trojan-Go 配置',
+  session: '会话管理',
   advanced: '高级参数'
 } as const;
 

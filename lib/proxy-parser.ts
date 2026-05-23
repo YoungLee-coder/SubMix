@@ -7,6 +7,7 @@ import { HysteriaParser } from './parsers/hysteria';
 import { Hysteria2Parser } from './parsers/hysteria2';
 import { ShadowsocksParser } from './parsers/shadowsocks';
 import { TrojanParser } from './parsers/trojan';
+import { AnytlsParser } from './parsers/anytls';
 
 // 重新导出常用接口和类型，保持向后兼容
 export type { ProxyNode } from './parsers/base';
@@ -23,6 +24,7 @@ export class ProxyParser {
     new Hysteria2Parser(),
     new ShadowsocksParser(),
     new TrojanParser(),
+    new AnytlsParser(),
   ];
 
   /**
@@ -79,6 +81,14 @@ export class ProxyParser {
   }
 
   /**
+   * 解析 AnyTLS 链接 - 兼容旧版本API
+   */
+  static parseAnytls(url: string): ProxyNode | null {
+    const parser = new AnytlsParser();
+    return parser.parse(url);
+  }
+
+  /**
    * 自动检测并解析协议连接串
    * 遍历所有已注册的解析器，找到第一个支持该协议的解析器进行解析
    */
@@ -129,7 +139,8 @@ export class ProxyParser {
       'hysteria2://',
       'hy2://',
       'ss://',
-      'trojan://'
+      'trojan://',
+      'anytls://'
     ];
     
     for (const testUrl of testUrls) {

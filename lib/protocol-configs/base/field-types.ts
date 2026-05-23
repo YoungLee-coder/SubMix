@@ -160,5 +160,6 @@ export const defaultPorts = {
   vless: 443,
   hysteria: 443,
   hysteria2: 443,
-  vmess: 443
+  vmess: 443,
+  anytls: 443
 } as const;
