@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Rocket, Github } from "lucide-react";
+import { Rocket } from "lucide-react";
+import { GithubIcon } from "@/components/ui/github-icon";
 import { ProtocolSupportCard } from "@/components/proxy/ProtocolSupportCard";
 import { ProxyWorkbench } from "@/components/proxy/ProxyWorkbench";
 
@@ -11,7 +12,7 @@ export default function Home() {
           <div className="absolute top-0 right-0">
             <Button asChild variant="outline" size="default" className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors">
               <a href="https://github.com/YoungLee-coder/SubMix" target="_blank" rel="noreferrer noopener">
-              <Github className="h-5 w-5" />
+              <GithubIcon className="h-5 w-5" />
               <span className="hidden sm:inline">GitHub</span>
               </a>
             </Button>
