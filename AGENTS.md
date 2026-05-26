@@ -1,163 +1,109 @@
-# AGENTS.md
+# SubMix Development Guide for AI Agents
 
-Guidance for coding agents working in this repository.
+You are a senior SubMix engineer working in a Next.js App Router, React 19, TypeScript strict, and Tailwind CSS v4 project. You prioritize type safety, security, and Server Component best practices.
 
-## Project Snapshot
+## Do
 
-- Stack: Next.js App Router (`app/`), React 19, TypeScript (`strict`), Tailwind CSS v4, shadcn/ui.
-- Package manager: `pnpm` (lockfile is `pnpm-lock.yaml`).
-- Runtime target: Node.js + Next.js server/runtime APIs.
-- Main domains:
-  - UI and state management in `app/`, `components/`, `hooks/`.
-  - Protocol parsing and config generation in `lib/`.
-  - API routes in `app/api/**/route.ts`.
+- Use `"use client"` only for components/hooks that need client-side features
+- Group imports: React/Next/external → `@/` internal → `import type`
+- Prefer `@/` alias over long relative paths
+- Validate all external input early with Zod schemas — return clear `400` errors
+- Wrap API route parsing in `try/catch` — return structured `500` errors, never leak internals
+- Use `NextResponse.json(...)` for JSON APIs; set explicit headers for YAML/file responses
+- Reuse existing domain types from `types/` and `lib/**` before creating new ones
+- Use discriminated unions or literal unions for constrained values
+- Keep state updates immutable; use `sonner` toasts for user-visible feedback
+- Make minimal, targeted diffs — avoid formatting churn in touched files
 
-## Source of Truth for Rules
+## Don't
 
-- Checked for Cursor rules:
-  - `.cursorrules` (not present)
-  - `.cursor/rules/` (not present)
-- Checked for Copilot rules:
-  - `.github/copilot-instructions.md` (not present)
-- Therefore, this file is the primary agent instruction file for repo-specific behavior.
+- Never use `as any` — use proper type-safe solutions
+- Never commit secrets, API keys, or `.env` files
+- Never skip running type checks before pushing
+- Never add large dependencies without strong justification
+- Never rename/move files unless required by the task
+- Never silence lint/type errors without documented reason
+- Never leak sensitive internals in production error responses
+- Never mutate state directly — always use immutable update patterns
+- Never add `"use client"` to components that don't need it
+- Never skip validation on external input (query params, JSON bodies)
 
-## Setup and Common Commands
+## Commands
 
-- Install deps:
-  - `pnpm install`
-- Start local dev server:
-  - `pnpm dev`
-- Production build:
-  - `pnpm build`
-- Start production server (after build):
-  - `pnpm start`
-- Lint all files:
-  - `pnpm lint`
+See [agents/commands.md](agents/commands.md) for full reference. Key commands:
 
-## Test Status and Single-Test Guidance
+```bash
+pnpm dev          # Start dev server (Turbopack)
+pnpm lint         # ESLint check
+pnpm typecheck    # TypeScript type check
+pnpm test:run     # Vitest single run
+```
 
-- Test runner: Vitest (`vitest.config.ts`).
-- Available scripts:
-  - `pnpm test` (watch mode)
-  - `pnpm test:run` (single CI-style run)
-  - `pnpm typecheck`
+## Boundaries
 
-Single-test command guidance:
+### Always do
+- Run `pnpm lint` and `pnpm typecheck` before considering work complete
+- Validate external input in API routes with Zod or equivalent
+- Use `lib/security/` modules for CORS, rate limiting, and request validation
 
-- Vitest single file:
-  - `pnpm vitest path/to/file.test.ts`
-- Vitest single test name:
-  - `pnpm vitest -t "test name"`
-- Jest single file:
-  - `pnpm jest path/to/file.test.ts`
-- Jest single test name:
-  - `pnpm jest -t "test name"`
+### Ask first
+- Adding new dependencies
+- Changing API response shapes
+- Deleting files
+- Modifying CORS or rate-limit behavior
 
-Pre-commit checks are enabled via Husky + lint-staged:
+### Never do
+- Commit secrets, API keys, or `.env` files
+- Force push or rebase shared branches
+- Introduce TypeScript `any` without documented justification
+- Change existing interaction patterns without explicit request
 
-- `pnpm lint`
-- `pnpm typecheck`
+## Project Structure
 
-## Linting and Type Rules
+```
+app/
+  api/            # Route handlers (convert, proxy-config, sub, subscription)
+  page.tsx        # Main page
+  layout.tsx      # Root layout
+components/
+  proxy/          # Domain components (ProxyWorkbench, NodeListCard, etc.)
+  ui/             # shadcn/ui primitives
+hooks/            # Shared hooks (useConfigGeneration, useEditConfig, useProxyManagement)
+lib/
+  http/           # HTTP helpers (errors, headers, middleware, response)
+  parsers/        # Protocol parsers (vless, trojan, shadowsocks, etc.)
+  protocol-configs/ # Config generators
+  security/       # CORS, rate-limit, request-validation
+  mihomo-config.ts # Mihomo config generation
+  proxy-parser.ts  # Proxy parsing pipeline
+types/
+  proxy.ts        # Proxy domain types
+features/
+  proxy/          # Proxy feature application logic
+tests/            # Vitest test files
+```
 
-- ESLint is configured via `eslint.config.mjs` with:
-  - Next.js recommended + core-web-vitals rules.
-  - React hooks rules (`rules-of-hooks` error, `exhaustive-deps` warn).
-- TypeScript is `strict: true` in `tsconfig.json`.
-- Path alias is enabled:
-  - `@/*` -> repository root.
+### Key files
+- `lib/proxy-parser.ts` — Subscription parsing pipeline
+- `lib/mihomo-config.ts` — Mihomo config generation
+- `lib/security/request-validation.ts` — Input validation + SSRF protection
+- `types/proxy.ts` — Core domain types
 
-Agent expectations:
+## Tech Stack
 
-- Do not introduce TypeScript `any` unless unavoidable; prefer explicit interfaces/types.
-- Keep hooks usage valid and dependency arrays complete.
-- Do not silence lint/type errors unless there is a documented reason.
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript (strict)
+- **UI**: React 19, Tailwind CSS v4, shadcn/ui
+- **Validation**: Zod
+- **Forms**: React Hook Form + @hookform/resolvers
+- **Testing**: Vitest
+- **Package manager**: pnpm
+- **Path alias**: `@/*` → repository root
 
-## Code Style Conventions
+## Extended Documentation
 
-Follow existing local file style and avoid wide reformatting-only diffs.
+For detailed information, see the `agents/` directory:
 
-### Imports
-
-- Group imports in this order unless file has a stronger existing pattern:
-  1) React/Next/external packages
-  2) Internal imports via `@/`
-  3) Type-only imports (`import type ...`) where appropriate
-- Prefer `@/` alias over long relative paths.
-- Keep imports minimal; remove unused imports.
-
-### Formatting
-
-- Use the file's current quote/semi style; this repo currently has mixed styles.
-- Preserve readable line lengths and logical spacing.
-- Avoid unrelated formatting churn in touched files.
-- Keep JSX className blocks readable; avoid collapsing complex class lists into one hard-to-read line.
-
-### Types and Data Modeling
-
-- Reuse existing domain types from `types/` and `lib/**` before creating new ones.
-- For API route payloads, define request/response interfaces near route handlers.
-- Use discriminated unions or literal unions for constrained values (e.g. mode/type fields).
-- Validate external input before use (query params, JSON bodies).
-
-### Naming
-
-- React components: `PascalCase` file and symbol names.
-- Hooks: `useXxx` naming, colocated in `hooks/` when shared.
-- Utilities/functions/variables: `camelCase`.
-- Constants: `UPPER_SNAKE_CASE` only for true constants.
-- Keep protocol/domain terms consistent with existing naming (`proxy`, `ruleMode`, `configType`, etc.).
-
-### React and Next.js Patterns
-
-- Use `"use client"` only for components/hooks that require client-side features.
-- Prefer server route handlers in `app/api/**/route.ts` for conversion/parsing endpoints.
-- Keep page components focused on composition; move reusable logic into hooks/components.
-- Respect App Router conventions (file-based routing, route handlers, layout usage).
-
-### Error Handling
-
-- Validate all external input early and return clear `400` errors for invalid client requests.
-- Wrap parsing/conversion logic in `try/catch` in API routes and return structured `500` errors.
-- Keep user-facing messages actionable and concise.
-- Avoid leaking sensitive internals in production error responses.
-- Logging:
-  - `console.error` for failures.
-  - Development-only verbose logs gated by `process.env.NODE_ENV === "development"`.
-
-### API Route Behavior
-
-- Return `NextResponse.json(...)` for JSON APIs.
-- For YAML/file responses, set explicit headers (`Content-Type`, cache directives, content disposition).
-- Preserve current CORS behavior unless explicitly asked to change it.
-- Keep response shape stable when editing existing endpoints.
-
-### State and UX Behavior
-
-- Keep optimistic/local state updates predictable and immutable.
-- Continue using toast notifications (`sonner`) for user-visible operation results.
-- Preserve existing interaction patterns (add/edit/delete/move node workflows).
-
-## File/Change Hygiene
-
-- Make minimal, targeted diffs.
-- Do not rename/move files unless required by the task.
-- Do not add large dependencies without strong justification.
-- Update docs when behavior or commands change.
-- If adding tests/tooling, document exact commands in this file and `README.md`.
-
-## Verification Checklist for Agents
-
-Run after meaningful changes:
-
-1. `pnpm lint`
-2. `pnpm exec tsc --noEmit`
-3. `pnpm build` (for changes affecting runtime/build behavior)
-
-For API changes, also perform a quick manual request check (curl or browser) against local dev server.
-
-## Notes for Future Agent Updates
-
-- If `.cursorrules`, `.cursor/rules/*`, or `.github/copilot-instructions.md` gets added later,
-  merge their guidance into this file and keep conflicts explicit.
-- Keep this document practical and command-accurate; prefer concrete examples over generic advice.
+- **[agents/README.md](agents/README.md)** — Rules index
+- **[agents/rules/](agents/rules/)** — Modular engineering rules
+- **[agents/commands.md](agents/commands.md)** — Complete command reference
