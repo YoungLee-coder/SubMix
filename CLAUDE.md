@@ -30,7 +30,7 @@ You are a senior SubMix engineer working in a Next.js App Router, React 19, Type
 
 ## Commands
 
-See [agents/commands.md](agents/commands.md) for full reference. Key commands:
+See `.claude/rules/` for modular engineering rules. Key commands:
 
 ```bash
 pnpm dev          # Start dev server (Turbopack)
@@ -102,8 +102,8 @@ tests/            # Vitest test files
 
 ## Extended Documentation
 
-For detailed information, see the `agents/` directory:
+For detailed information, see `.claude/`:
 
-- **[agents/README.md](agents/README.md)** — Rules index
-- **[agents/rules/](agents/rules/)** — Modular engineering rules
-- **[agents/commands.md](agents/commands.md)** — Complete command reference
+- **[.claude/rules/](.claude/rules/)** — Modular engineering rules
+- **[.claude/rules/_sections.md](.claude/rules/_sections.md)** — Rule categories and impact levels
+- **[.claude/rules/reference-file-locations.md](.claude/rules/reference-file-locations.md)** — Key file locations
