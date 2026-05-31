@@ -1,7 +1,6 @@
 name: ci
 
 on:
-  # 暂时禁用，需要时移除 if: false 条件即可恢复
   push:
     branches: [main, master]
   pull_request:
@@ -12,9 +11,8 @@ permissions:
 
 jobs:
   lint:
-    name: Check for build and type issues
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
-    if: false # 暂时禁用
 
     steps:
       - name: Checkout code
@@ -37,6 +35,9 @@ jobs:
 
       - name: Run lint
         run: pnpm lint
+
+      - name: Run typecheck
+        run: pnpm typecheck
 
       - name: Run build
         run: pnpm build

@@ -1,7 +1,5 @@
 version: 2
 updates:
-  # 暂时禁用 — 将 open-pull-requests-limit 设为 0 即可阻止 Dependabot 创建 PR
-  # npm 依赖更新
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -9,41 +7,42 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "Asia/Shanghai"
-    open-pull-requests-limit: 0
-    # 自动 rebase 避免冲突
-    rebase-strategy: "auto"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    labels:
+      - "dependencies"
 
-    # 按类型分组更新
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+      semver-minor-days: 7
+
     groups:
-      # React 生态系统
       react:
         patterns:
           - "react"
           - "react-dom"
           - "@types/react*"
-      # Next.js 相关
       nextjs:
         patterns:
           - "next"
           - "eslint-config-next"
-      # Radix UI 组件
       radix:
         patterns:
           - "@radix-ui/*"
-      # TanStack 系列
       tanstack:
         patterns:
           - "@tanstack/*"
-      # Tailwind CSS 相关
       tailwind:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
           - "tailwind-merge"
           - "tw-animate-css"
-      # 开发依赖
       dev-dependencies:
         dependency-type: "development"
         exclude-patterns:
@@ -51,21 +50,17 @@ updates:
           - "tailwindcss"
           - "@tailwindcss/*"
           - "eslint-config-next"
-    # 忽略主版本更新（需要手动处理）
+
     ignore:
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "next"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
-  # GitHub Actions 更新
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(ci)"
-
+    labels:
+      - "dependencies"
