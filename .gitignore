@@ -42,3 +42,12 @@ next-env.d.ts
 
 #kiro
 /.kiro
+
+# --- AI configuration ---
+# AGENTS.md is the shared source of truth (tracked). CLAUDE.md is a symlink to it (tracked).
+# Personal / machine-specific overrides go in *.local.md and stay out of git.
+CLAUDE.local.md
+AGENTS.local.md
+AGENTS.override.md
+# Track shared .claude config, ignore local overrides.
+.claude/settings.local.json
