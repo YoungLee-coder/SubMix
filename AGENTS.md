@@ -79,6 +79,7 @@ Optional env vars (all have safe in-process defaults):
 ## Hotspot Ownership
 
 - `lib/mihomo-config.ts` owns the entire Mihomo YAML output contract. Intentionally large (~712 lines). Run `pnpm test:run` when touching it.
+- `lib/parsers/shadowsocks.ts` — largest per-protocol parser (552 lines); changes must be covered by `pnpm test:run`
 
 ## Verification
 
